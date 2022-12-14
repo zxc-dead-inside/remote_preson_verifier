@@ -7,18 +7,19 @@ import face_cather
 
 
 def record():
-    check_index = 0 
+    check_index = 0
     print("[INFO] starting video stream...")
     vs = VideoStream(src=0).start()
     fourcc = cv.VideoWriter_fourcc(*'MP4V')
     out = cv.VideoWriter('video.mp4', fourcc, 30.0, (640,480))
-    right = cv.VideoWriter('turn_right.mp4', fourcc, 30.0, (640,480))
-    left = cv.VideoWriter('turn_left.mp4', fourcc, 30.0, (640,480))
+    #right = cv.VideoWriter('turn_right.mp4', fourcc, 30.0, (640,480))
+    #left = cv.VideoWriter('turn_left.mp4', fourcc, 30.0, (640,480))
     start_time = time.time()
-    while time.time() - start_time < 5:
+    while time.time() - start_time < 7:
         frame = vs.read()
         frame = imutils.resize(frame, height=480, width=640)
         dst = frame.copy()
+        dst = cv.flip(dst,1)
         _,piska,face_cords = face_cather.cvDnnDetectFaces(frame)
         for face in face_cords[0][0]:
             face_confidence = face[2]
@@ -46,9 +47,9 @@ def record():
         key = cv.waitKey(1) & 0xFF
         if key == ord("q"):
             break
-    return(True)
 
     out.release()
     cv.destroyAllWindows()
     vs.stop()
+
 record()
