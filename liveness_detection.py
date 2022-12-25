@@ -7,8 +7,10 @@ import pickle
 import time
 import cv2 as cv
 import os
+from rich.console import Console
 
 def detector():
+    console = Console()
     print("[INFO] loading face detector...")
     protoPath = "./face_detector//deploy.prototxt"
     modelPath = "./face_detector//res10_300x300_ssd_iter_140000.caffemodel"
@@ -17,13 +19,11 @@ def detector():
     print("[INFO] loading liveness detector...")
     model = load_model('liveness_detector_model')
     le = pickle.loads(open("le.pickle", "rb").read())
-    print("[INFO] starting video stream...")
-    vs = VideoStream(src=0).start()
-    time.sleep(2.0)
+    cap = cv.VideoCapture('video.mp4')
     success_counter = 0
 
-    for i in range(50):
-        frame = vs.read()
+    for i in range(100):
+        _, frame = cap.read()
         frame = imutils.resize(frame, height=480, width=640)
 
         (h, w) = frame.shape[:2]
@@ -50,11 +50,15 @@ def detector():
                 face = face.astype("float") / 255.0
                 face = img_to_array(face)
                 face = np.expand_dims(face, axis=0)
-
                 preds = model.predict(face)[0]
+                
                 j = np.argmax(preds)
                 label = le.classes_[j]
-                if label == 'real': success_counter+=1
+                if label == 'real':
+                    success_counter+=1
+                    console.log("[green]detected : real[/green]")
+                else:
+                    console.log("[red]detected : fake[/red]")
                 #print(preds)
                 #print(j)
                 #print(label)
@@ -74,13 +78,7 @@ def detector():
                     cv.putText(frame, _label, (startX, startY - 10),
                     cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
-        cv.imshow("Frame", frame)
-        key = cv.waitKey(1) & 0xFF
-
-        if key == ord("q"):
-            break
-    if success_counter >= 45:
+    if success_counter >= 90:
         return(True)
     else:
         return(False)
-detector()
