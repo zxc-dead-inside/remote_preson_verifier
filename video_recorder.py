@@ -1,12 +1,14 @@
 import cv2 as cv
 import mediapipe as mp
-import time
+from time import time
+from rich.console import Console
+import modified_verifier
+import liveness_detection
 
 
 
-
-def record():
-
+def record(img1_representation,custom_model,model_name,liveness_model,le):
+  console = Console()
   right = None
   left = None
   frame_counter = 0
@@ -14,17 +16,17 @@ def record():
   
 
   mp_face_detection = mp.solutions.face_detection
-  mp_drawing = mp.solutions.drawing_utils
   cap = cv.VideoCapture(0)
-  fourcc = cv.VideoWriter_fourcc(*'MP4V')
-  out = cv.VideoWriter('video.mp4', fourcc, 30.0, (640,480))
   
 
 
   with mp_face_detection.FaceDetection(
     model_selection=0, min_detection_confidence=0.5) as face_detection:
-    start_time = time.time()
-    while time.time() - start_time < 20:
+    positive_recognition = 0
+    negative_recognition = 0 
+    positive_liveness = 0
+    negative_liveness = 0
+    while True:
       success, frame = cap.read()
       image = frame.copy()
       dst = image.copy()
@@ -44,31 +46,62 @@ def record():
       image = cv.cvtColor(image, cv.COLOR_RGB2BGR)
       if results.detections:
         for detection in results.detections:
-          mp_drawing.draw_detection(image, detection)
           location = detection.location_data
           face_cords = location.relative_bounding_box
-          x1 = face_cords.xmin*w
-          y1 = face_cords.ymin*h
-          x2 = x1 + face_cords.width*w
-          y2 = y1 + face_cords.height*h
+          x1 = int(face_cords.xmin*w)
+          y1 = int(face_cords.ymin*h)
+          x2 = int(x1 + face_cords.width*w)
+          y2 = int(y1 + face_cords.height*h)
           
           if x1 > 180 and x2 < 460 and y1 > 80 and y2 < 360:
             border_index=2
-            if frame_counter<100:
+            if frame_counter<=100:
               cv.rectangle(dst,(180,80),(460,360),(0,255,0),2)
               cv.putText(dst, 'Hold face in the borders', (100, 30),
               cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-              out.write(frame)
+              if frame_counter%2==0:
+                face = frame[y1:y2,x1:x2]
+                res = liveness_detection.detector(face ,liveness_model,le)
+                if res:
+                    console.log("[green]liveness : real[/green]")
+                    positive_liveness+=1
+                else:
+                    console.log("[red]liveness : fake[/red]")
+                    negative_liveness+=1
+              if frame_counter%10==0:
+                result = modified_verifier.ver(img1_representation, frame, model_name, custom_model)
+                if result['verified'] == True:
+                    console.log("[green]verified : True[/green]")
+                    positive_recognition+=1
+                else:
+                    console.log("[red]verified : False[/red]")
+                    negative_recognition+=1
               frame_counter+=1
-            if frame_counter>=100 and right != "right":
+            if frame_counter>100 and right != "right":
               cv.rectangle(dst,(180,80),(460,360),(0,255,0),2)
               cv.putText(dst, 'Turn right', (100, 30),
               cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+              face = frame[y1:y2,x1:x2]
+              res = liveness_detection.detector(face ,liveness_model,le)
+              if res:
+                  console.log("[green]liveness : real[/green]")
+                  positive_liveness+=1
+              else:
+                  console.log("[red]liveness : fake[/red]")
+                  negative_liveness+=1
               right = head_turn(detection,w)
-            if frame_counter>=100 and left != "left" and right == "right":
+            if frame_counter>100 and left != "left" and right == "right":
               cv.rectangle(dst,(180,80),(460,360),(0,255,0),2)
               cv.putText(dst, 'Now turn left', (100, 30),
               cv.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+              face = frame[y1:y2,x1:x2]
+              res = liveness_detection.detector(face ,liveness_model,le)
+              if res:
+                  console.log("[green]liveness : real[/green]")
+                  positive_liveness+=1
+              else:
+                  console.log("[red]liveness : fake[/red]")
+                  negative_liveness+=1
               left = head_turn(detection,w)
           else:
               border_index-=1
@@ -82,10 +115,14 @@ def record():
         #if border_index == 1:
         #  return False
         if frame_counter >= 100 and right == "right" and left == "left":
-          out.release()
           cv.destroyAllWindows()
-          return True
-  out.release()
+        
+          if positive_recognition>=9 and negative_liveness==0:
+            return True
+          elif positive_recognition>=9 and negative_liveness/(positive_liveness+negative_liveness)>0.9:
+            return True
+          else:
+            return False
   cv.destroyAllWindows()
 
 def head_turn(detection,w):

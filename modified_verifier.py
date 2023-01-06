@@ -60,21 +60,3 @@ def ver(img1_representation,img2,model_name,custom_model,distance_metric = 'eucl
 
 
 
-# cap = cv.VideoCapture('video.mp4')
-# model_name = "Facenet"
-# custom_model = DeepFace.build_model(model_name)
-# img1_representation = DeepFace.represent(img_path = "myself.jpg"
-#                             , model_name = model_name, model = custom_model
-#                             , enforce_detection = True, detector_backend = 'mediapipe'
-#                             , align = True
-#                             , normalization = 'base'
-#                             )
-# tic = time.time()
-# for i in range(10):
-#     ret, frame = cap.read()
-#     image_height, image_width, _ = frame.shape
-#     output_image = frame.copy()
-#     ver(img1_representation, frame,model_name,custom_model)
-# toc = time.time()
-# print(toc-tic)
-
