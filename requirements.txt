@@ -1,0 +1,12 @@
+deepface==0.0.75
+imutils==0.5.4
+keras==2.11.0
+matplotlib==3.2.2
+mediapipe==0.9.0.1
+numpy==1.24.1
+opencv_python==4.5.5.64
+rich==13.0.1
+scikit_learn==1.2.0
+tensorflow==2.11.0
+tensorflow_intel==2.11.0
+~umpy==1.18.5
