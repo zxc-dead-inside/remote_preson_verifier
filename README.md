@@ -1,7 +1,8 @@
 # Remote Face Verification
 
 This module allows for face verification in real time from a video stream from
-a webcam with active and passive live presence verification.
+a webcam with active and passive live presence verification. A webcam is required for the module to work.
+
 
 ### Usage:
 
